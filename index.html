@@ -29,9 +29,26 @@
 <body>
 
   <!-- PIN Modal -->
+  <!-- Login Modal -->
   <div id="login-overlay">
     <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
-      <h3 style="margin-top: 0;">Portfolio Access</h3>
+      <!-- Dashboard Logo Graphic -->
+      <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+        <svg width="80" height="60" viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Circular Gauge BG -->
+          <path d="M15 60 A 40 40 0 0 1 85 60" stroke="#1e293b" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M15 60 A 40 40 0 0 1 85 60" stroke="#334155" stroke-width="4" stroke-dasharray="2 4" fill="none"/>
+          <!-- Active Gauge Arc -->
+          <path d="M15 60 A 40 40 0 0 1 72 40" stroke="#0ea5e9" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <!-- Financial Growth Arrow and Graph Line -->
+          <path d="M22 60 L45 42 L58 48 L82 23" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M72 23 L83 22 L82 33" fill="#10b981"/>
+          <!-- Dial Pointer Pin -->
+          <circle cx="50" cy="55" r="5" fill="#38bdf8"/>
+          <line x1="50" y1="55" x2="68" y2="35" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3 style="margin-top: 0; font-weight: 700; color: #f8fafc; letter-spacing: 0.5px; margin-bottom: 20px;">Portfolio Cockpit</h3>
       <input type="password" id="pin-input" placeholder="Enter PIN" autofocus />
       <button onclick="handleLogin()" style="margin-top: 12px;">Unlock</button>
       <div id="login-err" class="neg" style="font-size: 12px; margin-top: 8px;"></div>
@@ -41,9 +58,20 @@
   <!-- Dashboard -->
   <div id="app" class="container" style="display: none;">
     <div class="header-bar">
-      <div>
-        <h2 style="margin: 0; font-size: 18px;">Savings & Investments Cockpit</h2>
-        <span id="fx-tag" class="sub">1 USD = ... ILS</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Small SVG Inline Logo -->
+        <svg width="42" height="35" viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
+          <path d="M15 60 A 40 40 0 0 1 85 60" stroke="#334155" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M15 60 A 40 40 0 0 1 72 40" stroke="#0ea5e9" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M22 60 L45 42 L58 48 L82 23" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M72 23 L83 22 L82 33" fill="#10b981"/>
+          <circle cx="50" cy="55" r="5" fill="#38bdf8"/>
+          <line x1="50" y1="55" x2="68" y2="35" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Portfolio Cockpit</h2>
+          <span id="fx-tag" class="sub">1 USD = ... ILS</span>
+        </div>
       </div>
       <button onclick="logout()" style="width: auto; padding: 6px 12px; background: #334155; margin: 0;">Logout</button>
     </div>
