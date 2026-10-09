@@ -101,7 +101,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Account</th><th>Tier</th><th>Currency</th><th>Total Balance</th><th>Invested</th><th>Profit</th><th>Return</th></tr>
+            <tr><th>Account</th><th>Tier</th><th>Currency</th><th>Total Balance</th><th>Invested</th><th>Profit</th><th>Return</th><th>Last Updated</th></tr>
           </thead>
           <tbody id="accounts-tbody"></tbody>
         </table>
@@ -229,7 +229,18 @@
 
       data.accounts.forEach(function(a) {
         const cls = a.profit >= 0 ? "pos" : "neg";
-        accRows += "<tr><td><strong>" + a.name + "</strong></td><td>" + a.tier + "</td><td>" + a.currency + "</td><td>" + a.balance.toLocaleString() + "</td><td>" + a.invested.toLocaleString() + "</td><td class='" + cls + "'>" + (a.profit >= 0 ? "+" : "") + Math.round(a.profit).toLocaleString() + "</td><td class='" + cls + "'><strong>" + a.returnPct.toFixed(1) + "%</strong></td></tr>";
+        const monthlyBadge = a.monthlyDeposit > 0 ? `<div style="font-size:10px; color:#38bdf8;">+₪${a.monthlyDeposit.toLocaleString()}/mo</div>` : '';
+        
+        accRows += `<tr>
+          <td><strong>${a.name}</strong>${monthlyBadge}</td>
+          <td>${a.tier}</td>
+          <td>${a.currency}</td>
+          <td>${Math.round(a.balance).toLocaleString()}</td>
+          <td>${Math.round(a.invested).toLocaleString()}</td>
+          <td class="${cls}">${a.profit >= 0 ? "+" : ""}${Math.round(a.profit).toLocaleString()}</td>
+          <td class="${cls}"><strong>${a.returnPct.toFixed(1)}%</strong></td>
+          <td style="color: #94a3b8; font-size: 11px;">${a.lastUpdated || "—"}</td>
+        </tr>`;
 
         let opt1 = document.createElement("option");
         opt1.value = a.id;
