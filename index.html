@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Portfolio Cockpit</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; margin: 0; padding: 16px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px; }
+    .val { font-size: 24px; font-weight: 800; margin: 4px 0; }
+    .sub { font-size: 13px; color: #64748b; }
+    .pos { color: #4ade80; }
+    .neg { color: #f87171; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    th { text-align: left; padding: 8px; background: #0f172a; color: #94a3b8; }
+    td { padding: 8px; border-bottom: 1px solid #334155; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; margin-top: 6px; }
+    button { background: #2563eb; font-weight: 600; border: none; cursor: pointer; }
+    button:active { background: #1d4ed8; }
+    #login-overlay { position: fixed; inset: 0; background: #0b0f19; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #334155; padding-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- PIN Modal -->
+  <div id="login-overlay">
+    <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+      <h3 style="margin-top: 0;">Portfolio Access</h3>
+      <input type="password" id="pin-input" placeholder="Enter PIN" autofocus />
+      <button onclick="handleLogin()" style="margin-top: 12px;">Unlock</button>
+      <div id="login-err" class="neg" style="font-size: 12px; margin-top: 8px;"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="app" class="container" style="display: none;">
+    <div class="header-bar">
+      <div>
+        <h2 style="margin: 0; font-size: 18px;">Savings & Investments Cockpit</h2>
+        <span id="fx-tag" class="sub">1 USD = ... ILS</span>
+      </div>
+      <button onclick="logout()" style="width: auto; padding: 6px 12px; background: #334155; margin: 0;">Logout</button>
+    </div>
+
+    <!-- 1. KPI Cards -->
+    <div class="grid">
+      <div class="card" style="border-top: 4px solid #38bdf8;">
+        <div class="label">Liquid Savings (Spendable)</div>
+        <div class="val" id="liquid-val">₪0</div>
+        <div class="sub" id="liquid-sub">Invested: ₪0</div>
+      </div>
+      <div class="card" style="border-top: 4px solid #a855f7;">
+        <div class="label">Locked / Pension (Long-Term)</div>
+        <div class="val" id="locked-val">₪0</div>
+        <div class="sub" id="locked-sub">Invested: ₪0</div>
+      </div>
+      <div class="card" style="border-top: 4px solid #4ade80;">
+        <div class="label">Consolidated Net Worth</div>
+        <div class="val" id="total-val">₪0</div>
+        <div class="sub" id="total-sub">Total Gain: ₪0</div>
+      </div>
+    </div>
+
+    <!-- 2. Account Breakdown Table -->
+    <div class="card">
+      <div class="label">Account Breakdown</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Account</th><th>Tier</th><th>Currency</th><th>Total Balance</th><th>Invested</th><th>Profit</th><th>Return</th></tr>
+          </thead>
+          <tbody id="accounts-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. Stock Positions with Market vs FX Attribution -->
+    <div class="card">
+      <div class="label">Tracked Stock Positions & Attribution</div>
+      <div class="table-wrap">
+        <table id="positions-table">
+          <thead>
+            <tr><th>Ticker</th><th>Account</th><th>Shares</th><th>Avg Buy</th><th>Current</th><th>Profit (Native)</th><th>Market Effect (ILS)</th><th>FX Effect (ILS)</th><th>Total Gain (ILS)</th></tr>
+          </thead>
+          <tbody id="positions-tbody"><tr><td colspan="9" style="color: #64748b;">No stock trades logged yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. Deposit / Withdraw Cash -->
+    <div class="card" style="border-left: 4px solid #10b981;">
+      <div class="label">Deposit / Withdraw Cash</div>
+      <div class="sub" style="margin: 4px 0 8px 0;">Add or withdraw capital to automatically adjust invested basis and balance.</div>
+      <select id="cf-account"></select>
+      <div style="display: flex; gap: 8px;">
+        <select id="cf-type" style="flex: 1;">
+          <option value="DEPOSIT">Deposit (+)</option>
+          <option value="WITHDRAWAL">Withdrawal (-)</option>
+        </select>
+        <input type="number" step="any" id="cf-amount" placeholder="Amount" style="flex: 2;" />
+      </div>
+      <input type="text" id="cf-note" placeholder="Note (e.g. Monthly transfer)" style="margin-top: 6px;" />
+      <button onclick="submitCashFlow()" id="btn-cf" style="background: #059669; margin-top: 8px;">Record Cash Flow</button>
+    </div>
+
+    <!-- 5. Update Snapshot Form -->
+    <div class="card" style="border-left: 4px solid #f59e0b;">
+      <div class="label">Update Total Account Balance Snapshot</div>
+      <div class="sub" style="margin: 4px 0 8px 0;">Record periodic updates for non-stock accounts (e.g. quarterly pension statement).</div>
+      <select id="b-account"></select>
+      <input type="number" step="any" id="b-new-balance" placeholder="New Total Balance" />
+      <button onclick="submitBalanceUpdate()" id="btn-balance" style="background: #d97706; margin-top: 8px;">Update Balance</button>
+    </div>
+
+    <!-- 6. Trade Form -->
+    <div class="card">
+      <div class="label">Log Stock Trade</div>
+      <select id="t-account">
+        <option value="IB_USD">Interactive Brokers (USD)</option>
+        <option value="BANK_ILS">Bank Securities (ILS)</option>
+      </select>
+      <div style="display: flex; gap: 8px;">
+        <select id="t-action" style="flex: 1;"><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
+        <input type="text" id="t-ticker" placeholder="Ticker (NVDA)" style="flex: 2; text-transform: uppercase;" />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <input type="number" step="any" id="t-shares" placeholder="Shares" style="flex: 1;" />
+        <input type="number" step="any" id="t-price" placeholder="Price ($ or ₪)" style="flex: 1;" />
+      </div>
+      <button onclick="submitTrade()" id="btn-trade">Submit Trade</button>
+    </div>
+  </div>
+
+  <script>
+    // Paste your Google Apps Script Web App URL here
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+
+    let currentPin = localStorage.getItem("portfolio_pin") || "";
+    let currentUsdIls = 3.70;
+
+    window.onload = function() {
+      if (currentPin) loadData(currentPin);
+    };
+
+    function handleLogin() {
+      const pin = document.getElementById("pin-input").value;
+      loadData(pin);
+    }
+
+    function logout() {
+      localStorage.removeItem("portfolio_pin");
+      location.reload();
+    }
+
+    async function loadData(pin) {
+      document.getElementById("login-err").innerText = "Loading...";
+      try {
+        const res = await fetch(`${SCRIPT_URL}?pin=${encodeURIComponent(pin)}`);
+        const data = await res.json();
+        if (data.error) {
+          document.getElementById("login-err").innerText = "Invalid PIN";
+          localStorage.removeItem("portfolio_pin");
+        } else {
+          localStorage.setItem("portfolio_pin", pin);
+          currentPin = pin;
+          document.getElementById("login-overlay").style.display = "none";
+          document.getElementById("app").style.display = "block";
+          renderDashboard(data);
+        }
+      } catch (err) {
+        document.getElementById("login-err").innerText = "Connection error. Check URL.";
+      }
+    }
+
+    function renderDashboard(data) {
+      currentUsdIls = data.usdIls;
+      document.getElementById("fx-tag").innerText = "1 USD = " + data.usdIls.toFixed(2) + " ILS";
+
+      document.getElementById("liquid-val").innerText = "₪" + Math.round(data.liquidValILS).toLocaleString();
+      document.getElementById("liquid-sub").innerHTML = "Inv: ₪" + Math.round(data.liquidInvILS).toLocaleString() + " | <span class='" + (data.liquidProfitILS >= 0 ? "pos" : "neg") + "'>₪" + Math.round(data.liquidProfitILS).toLocaleString() + " (" + data.liquidReturnPct.toFixed(1) + "%)</span>";
+
+      document.getElementById("locked-val").innerText = "₪" + Math.round(data.lockedValILS).toLocaleString();
+      document.getElementById("locked-sub").innerHTML = "Inv: ₪" + Math.round(data.lockedInvILS).toLocaleString() + " | <span class='" + (data.lockedProfitILS >= 0 ? "pos" : "neg") + "'>₪" + Math.round(data.lockedProfitILS).toLocaleString() + " (" + data.lockedReturnPct.toFixed(1) + "%)</span>";
+
+      const totVal = data.liquidValILS + data.lockedValILS;
+      const totProfit = data.liquidProfitILS + data.lockedProfitILS;
+      document.getElementById("total-val").innerText = "₪" + Math.round(totVal).toLocaleString();
+      document.getElementById("total-sub").innerHTML = "Combined Profit: <span class='" + (totProfit >= 0 ? "pos" : "neg") + "'>₪" + Math.round(totProfit).toLocaleString() + "</span>";
+
+      let accRows = "";
+      let bSelect = document.getElementById("b-account");
+      let cfSelect = document.getElementById("cf-account");
+      bSelect.innerHTML = "";
+      cfSelect.innerHTML = "";
+
+      data.accounts.forEach(function(a) {
+        const cls = a.profit >= 0 ? "pos" : "neg";
+        accRows += "<tr><td><strong>" + a.name + "</strong></td><td>" + a.tier + "</td><td>" + a.currency + "</td><td>" + a.balance.toLocaleString() + "</td><td>" + a.invested.toLocaleString() + "</td><td class='" + cls + "'>" + (a.profit >= 0 ? "+" : "") + Math.round(a.profit).toLocaleString() + "</td><td class='" + cls + "'><strong>" + a.returnPct.toFixed(1) + "%</strong></td></tr>";
+
+        let opt1 = document.createElement("option");
+        opt1.value = a.id;
+        opt1.text = a.name + " (" + a.currency + ")";
+        bSelect.appendChild(opt1);
+
+        let opt2 = document.createElement("option");
+        opt2.value = a.id;
+        opt2.text = a.name + " (" + a.currency + ")";
+        cfSelect.appendChild(opt2);
+      });
+      document.getElementById("accounts-tbody").innerHTML = accRows;
+
+      if (data.positions && data.positions.length > 0) {
+        let posRows = "";
+        data.positions.forEach(function(p) {
+          const clsNat = p.nativeProfit >= 0 ? "pos" : "neg";
+          const clsMkt = p.marketILS >= 0 ? "pos" : "neg";
+          const clsFx = p.fxILS >= 0 ? "pos" : "neg";
+          const clsTot = p.totalILS >= 0 ? "pos" : "neg";
+
+          posRows += "<tr><td><strong>" + p.ticker + "</strong></td><td>" + p.accountId + "</td><td>" + p.shares + "</td><td>$" + p.avgBuy.toFixed(2) + "</td><td>$" + p.curPrice.toFixed(2) + "</td><td class='" + clsNat + "'>$" + (p.nativeProfit >= 0 ? "+" : "") + p.nativeProfit.toFixed(2) + " (" + p.returnPct.toFixed(1) + "%)</td><td class='" + clsMkt + "'>₪" + (p.marketILS >= 0 ? "+" : "") + Math.round(p.marketILS).toLocaleString() + "</td><td class='" + clsFx + "'>₪" + (p.fxILS >= 0 ? "+" : "") + Math.round(p.fxILS).toLocaleString() + "</td><td class='" + clsTot + "'><strong>₪" + (p.totalILS >= 0 ? "+" : "") + Math.round(p.totalILS).toLocaleString() + "</strong></td></tr>";
+        });
+        document.getElementById("positions-tbody").innerHTML = posRows;
+      }
+    }
+
+    async function postAction(payload) {
+      payload.pin = currentPin;
+      // Content-Type: text/plain avoids CORS preflight OPTIONS request
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      return await res.json();
+    }
+
+    async function submitTrade() {
+      const btn = document.getElementById("btn-trade");
+      btn.innerText = "Submitting...";
+      btn.disabled = true;
+
+      await postAction({
+        action: "ADD_TRADE",
+        accountId: document.getElementById("t-account").value,
+        tradeAction: document.getElementById("t-action").value,
+        ticker: document.getElementById("t-ticker").value,
+        shares: document.getElementById("t-shares").value,
+        price: document.getElementById("t-price").value,
+        fee: 1.0,
+        usdIls: currentUsdIls
+      });
+
+      btn.innerText = "Submit Trade";
+      btn.disabled = false;
+      document.getElementById("t-ticker").value = "";
+      document.getElementById("t-shares").value = "";
+      document.getElementById("t-price").value = "";
+      loadData(currentPin);
+    }
+
+    async function submitBalanceUpdate() {
+      const btn = document.getElementById("btn-balance");
+      const accId = document.getElementById("b-account").value;
+      const newBal = document.getElementById("b-new-balance").value;
+      if (!newBal) return alert("Please enter a new balance");
+
+      btn.innerText = "Updating...";
+      btn.disabled = true;
+
+      await postAction({
+        action: "UPDATE_BALANCE",
+        accountId: accId,
+        newBalance: newBal
+      });
+
+      btn.innerText = "Update Balance";
+      btn.disabled = false;
+      document.getElementById("b-new-balance").value = "";
+      loadData(currentPin);
+    }
+
+    async function submitCashFlow() {
+      const btn = document.getElementById("btn-cf");
+      const amount = document.getElementById("cf-amount").value;
+      if (!amount || Number(amount) <= 0) return alert("Enter valid amount");
+
+      btn.innerText = "Recording...";
+      btn.disabled = true;
+
+      await postAction({
+        action: "CASH_FLOW",
+        accountId: document.getElementById("cf-account").value,
+        flowType: document.getElementById("cf-type").value,
+        amount: amount,
+        note: document.getElementById("cf-note").value
+      });
+
+      btn.innerText = "Record Cash Flow";
+      btn.disabled = false;
+      document.getElementById("cf-amount").value = "";
+      document.getElementById("cf-note").value = "";
+      loadData(currentPin);
+    }
+  </script>
+</body>
+</html>
